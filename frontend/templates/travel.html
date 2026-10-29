@@ -1,0 +1,224 @@
+
+{% extends "base.html" %}
+
+{% block title %}Travel Dashboard — WANDERLIST{% endblock %}
+
+{% block content %}
+<style>
+.travel-page { max-width: 1150px; margin: 0 auto; }
+.travel-hero { padding: 28px; border-radius: 20px; background: linear-gradient(125deg,#173f35,#34765a); color: white; margin-bottom: 24px; }
+.travel-hero h1 { font-size: clamp(26px,4vw,38px); margin: 0 0 8px; }
+.travel-hero p { color: #e0eee5; margin: 0; }
+.travel-stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin: 20px 0; }
+.travel-stat,.travel-panel,.destination-card,.trip-card { border: 1px solid var(--line, #e3e8e3); border-radius: 16px; padding: 18px; background: var(--panel, white); }
+.travel-stat span { display: block; color: var(--muted,#68746d); font-size: 13px; }
+.travel-stat strong { display: block; font-size: 25px; margin-top: 8px; overflow-wrap: anywhere; }
+.travel-grid { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(260px,1fr); gap: 18px; }
+.travel-panel { margin-bottom: 18px; }
+.travel-panel h2 { font-size: 19px; margin: 0 0 14px; }
+.travel-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.travel-form label { display: block; font-size: 13px; margin-bottom: 5px; color: var(--muted,#68746d); }
+.travel-form input,.travel-form select,.travel-form textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--line,#dce3dc); border-radius: 9px; padding: 10px; background: var(--surface,#fff); color: inherit; font: inherit; }
+.travel-form textarea { min-height: 76px; resize: vertical; }
+.travel-form .full { grid-column: 1/-1; }
+.travel-button { display: inline-block; padding: 10px 14px; border: 0; border-radius: 9px; background: #286449; color: white; cursor: pointer; font-weight: 600; text-decoration: none; font: inherit; }
+.travel-button.secondary { background: #edf3ef; color: #24543e; }
+.destination-list,.trip-list { display: grid; gap: 12px; }
+.destination-card h3,.trip-card h3 { margin: 0 0 6px; }
+.destination-card p,.trip-card p { color: var(--muted,#68746d); margin: 6px 0; overflow-wrap: anywhere; }
+.travel-tag { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e9f3ed; color: #24543e; font-size: 12px; margin: 2px 4px 2px 0; }
+.travel-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.travel-inline-form { display: inline; }
+.travel-empty { color: var(--muted,#68746d); padding: 14px 0; }
+.travel-budget-note { font-size: 12px; color: var(--muted,#68746d); }
+@media(max-width:760px) { .travel-stats { grid-template-columns: repeat(2,minmax(0,1fr)); } .travel-grid { grid-template-columns: 1fr; } }
+@media(max-width:440px) { .travel-form { grid-template-columns: 1fr; } .travel-form .full { grid-column: auto; } .travel-hero { padding: 20px; } }
+</style>
+
+<div class="travel-page">
+    <section class="travel-hero">
+        <h1>Your travel dashboard ✈️</h1>
+        <p>Keep your dream destinations, trip plans, notes, and travel budget together.</p>
+    </section>
+
+    <div class="travel-stats">
+        <div class="travel-stat">
+            <span>Saved destinations</span>
+            <strong>{{ stats.total }}</strong>
+        </div>
+        <div class="travel-stat">
+            <span>On your wishlist</span>
+            <strong>{{ stats.wishlist }}</strong>
+        </div>
+        <div class="travel-stat">
+            <span>Trips being planned</span>
+            <strong>{{ stats.planning }}</strong>
+        </div>
+        <div class="travel-stat">
+            <span>Places visited</span>
+            <strong>{{ stats.visited }}</strong>
+        </div>
+    </div>
+
+    <div class="travel-grid">
+        <div>
+            <section class="travel-panel">
+                <h2>♡ Save a destination</h2>
+                <p class="travel-budget-note">Add a country to your personal list. Saving the same country again updates its details.</p>
+
+                <form class="travel-form" method="post" action="{{ url_for('save_travel_destination') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                    <div>
+                        <label for="country">Country *</label>
+                        <input id="country" name="country" maxlength="100" required placeholder="e.g. Japan">
+                    </div>
+                    <div>
+                        <label for="region">Region</label>
+                        <input id="region" name="region" maxlength="100" placeholder="e.g. East Asia">
+                    </div>
+                    <div>
+                        <label for="capital">Capital</label>
+                        <input id="capital" name="capital" maxlength="100" placeholder="e.g. Tokyo">
+                    </div>
+                    <div>
+                        <label for="flag">Flag emoji</label>
+                        <input id="flag" name="flag" maxlength="20" placeholder="e.g. 🇯🇵">
+                    </div>
+                    <div>
+                        <label for="currency">Currency</label>
+                        <input id="currency" name="currency" maxlength="100" placeholder="e.g. Japanese yen">
+                    </div>
+                    <div>
+                        <label for="language">Language</label>
+                        <input id="language" name="language" maxlength="100" placeholder="e.g. Japanese">
+                    </div>
+                    <div>
+                        <label for="status">Travel status</label>
+                        <select id="status" name="status">
+                            <option value="wishlist">Wishlist</option>
+                            <option value="planning">Planning</option>
+                            <option value="visited">Visited</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority">
+                            <option value="high">High</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="estimated_budget">Estimated budget (₱)</label>
+                        <input id="estimated_budget" name="estimated_budget" type="number" min="0" step="0.01" value="0">
+                    </div>
+                    <div>
+                        <label for="actual_budget">Actual spending (₱)</label>
+                        <input id="actual_budget" name="actual_budget" type="number" min="0" step="0.01" value="0">
+                    </div>
+                    <div class="full">
+                        <label for="notes">Personal notes</label>
+                        <textarea id="notes" name="notes" maxlength="2000" placeholder="Places to visit, food to try, or travel reminders..."></textarea>
+                    </div>
+                    <div class="full">
+                        <button class="travel-button" type="submit">Save destination</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="travel-panel">
+                <h2>My destinations</h2>
+                {% if destinations %}
+                    <div class="destination-list">
+                        {% for destination in destinations %}
+                            <article class="destination-card">
+                                <h3>{{ destination.flag }} {{ destination.country }}</h3>
+                                <p>
+                                    {% if destination.capital %}Capital: {{ destination.capital }}{% endif %}
+                                    {% if destination.region %} · {{ destination.region }}{% endif %}
+                                </p>
+                                <span class="travel-tag">{{ destination.status|capitalize }}</span>
+                                <span class="travel-tag">{{ destination.priority|capitalize }} priority</span>
+                                {% if destination.notes %}
+                                    <p><strong>My notes:</strong> {{ destination.notes }}</p>
+                                {% endif %}
+                                <p>Estimated: ₱{{ "%.2f"|format(destination.estimated_budget or 0) }} · Spent: ₱{{ "%.2f"|format(destination.actual_budget or 0) }}</p>
+                                <div class="travel-card-actions">
+                                    <a class="travel-button secondary" href="https://www.google.com/maps/search/?api=1&query={{ destination.country|urlencode }}" target="_blank" rel="noopener noreferrer">Explore map ↗</a>
+                                    <form class="travel-inline-form" method="post" action="{{ url_for('remove_travel_destination', destination_id=destination.id) }}" onsubmit="return confirm('Remove this destination?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <button class="travel-button secondary" type="submit">Remove</button>
+                                    </form>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="travel-empty">Your list is empty for now. Add your first dream destination above!</p>
+                {% endif %}
+            </section>
+        </div>
+
+        <div>
+            <section class="travel-panel">
+                <h2>Travel budget overview</h2>
+                <p>Estimated total</p>
+                <h2>₱{{ "%.2f"|format(stats.estimated_budget or 0) }}</h2>
+                <p>Recorded spending</p>
+                <h2>₱{{ "%.2f"|format(stats.actual_budget or 0) }}</h2>
+                <p class="travel-budget-note">These totals add up the budgets recorded for your saved destinations.</p>
+            </section>
+
+            <section class="travel-panel">
+                <h2>＋ Create a trip</h2>
+                <form class="travel-form" method="post" action="{{ url_for('new_trip') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="full">
+                        <label for="trip-title">Trip name *</label>
+                        <input id="trip-title" name="title" maxlength="100" required placeholder="e.g. Summer in Japan">
+                    </div>
+                    <div>
+                        <label for="start-date">Start date</label>
+                        <input id="start-date" name="start_date" type="date">
+                    </div>
+                    <div>
+                        <label for="end-date">End date</label>
+                        <input id="end-date" name="end_date" type="date">
+                    </div>
+                    <div class="full">
+                        <label for="trip-budget">Trip budget (₱)</label>
+                        <input id="trip-budget" name="budget" type="number" min="0" step="0.01" value="0">
+                    </div>
+                    <div class="full">
+                        <label for="trip-notes">Trip notes</label>
+                        <textarea id="trip-notes" name="notes" maxlength="2000" placeholder="Who is going? What should you remember?"></textarea>
+                    </div>
+                    <div class="full">
+                        <button class="travel-button" type="submit">Create trip</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="travel-panel">
+                <h2>My trips</h2>
+                {% if trips %}
+                    <div class="trip-list">
+                        {% for trip in trips %}
+                            <article class="trip-card">
+                                <h3>{{ trip.title }}</h3>
+                                <p>{{ trip.start_date or "Start date not set" }} → {{ trip.end_date or "End date not set" }}</p>
+                                <p>Budget: ₱{{ "%.2f"|format(trip.budget or 0) }}</p>
+                                {% if trip.notes %}<p>{{ trip.notes }}</p>{% endif %}
+                                <a class="travel-button" href="{{ url_for('trip_detail', trip_id=trip.id) }}">Open itinerary →</a>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="travel-empty">No trips yet. Create one above to start planning your itinerary.</p>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

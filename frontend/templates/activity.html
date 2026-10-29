@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import icon %}
+{% block title %}Activity{% endblock %}
+{% block breadcrumb %}Activity{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">THE SMALL STEPS ADD UP</p><h1>A little momentum<span class="heading-dot">.</span></h1><p class="page-intro">A look at what has been happening in your workspace.</p></div><span class="count-badge">Latest {{ events|length }} event{{ 's' if events|length != 1 else '' }}</span></section>
+<section class="activity-surface surface" aria-label="Workspace activity">{% for event in events %}<article class="activity-row"><span class="activity-icon event-{{ event.kind }}">{{ icon('restore' if event.kind == 'restored' else ('archive' if event.kind == 'removed' else ('plus' if event.kind == 'added' else 'check')), 19) }}</span><div class="activity-description"><p>{{ event.title }}</p><small>{{ event.kind|capitalize }}</small></div><time datetime="{{ event.created_at }}">{{ event.created_at|event_date }}</time></article>{% else %}<p class="section-description">Your next action will appear here.</p>{% endfor %}</section>
+{% endblock %}

@@ -1,0 +1,337 @@
+ {% extends 'base.html' %}
+
+{% block title %}WANDERLIST — Explore the World{% endblock %}
+{% block breadcrumb %}Explore the world{% endblock %}
+
+{% block content %}
+<style>
+.wander{color:#24392e}
+.w-hero{padding:36px;border-radius:24px;background:linear-gradient(125deg,#164c3b,#438364);color:white;margin-bottom:28px}
+.w-hero small{letter-spacing:2px;text-transform:uppercase}
+.w-hero h1{font-size:clamp(32px,5vw,48px);margin:12px 0}
+.w-hero p{line-height:1.7;max-width:600px}
+.w-search{display:flex;gap:10px;margin-top:22px;max-width:700px}
+.w-search input{flex:1;min-width:0;padding:14px;border:0;border-radius:12px;font-size:15px}
+.w-search button{padding:12px 22px;border:0;border-radius:12px;background:#d9f3df;color:#174c3c;font-weight:bold;cursor:pointer}
+.w-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:24px 0 16px}
+.w-heading h2{margin:0}
+.w-muted{color:#758078;font-size:14px}
+.w-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.w-filter{border:1px solid #dbe4dd;background:white;color:#365044;padding:9px 14px;border-radius:24px;cursor:pointer}
+.w-filter.active{background:#174c3c;color:white}
+.w-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:17px}
+.w-card{background:white;border:1px solid #e1e8e2;border-radius:17px;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.w-card:hover{transform:translateY(-3px);box-shadow:0 10px 25px #173d2912}
+.w-card-top{height:120px;background:linear-gradient(135deg,#e7f4e9,#f6f7ee);display:flex;align-items:center;justify-content:center;font-size:65px}
+.w-card-body{padding:15px}
+.w-region{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#66816e}
+.w-card h3{margin:7px 0;font-size:20px;color:#20382d}
+.w-card p{font-size:14px;line-height:1.5;color:#69776e;min-height:38px}
+.w-actions{display:flex;gap:8px;margin-top:13px}
+.w-actions button{flex:1;padding:10px 7px;border-radius:9px;cursor:pointer;font-weight:600}
+.w-guide{border:1px solid #dce5dd;background:white;color:#315442}
+.w-add{border:0;background:#d9f3df;color:#174c3c}
+.w-add.saved{background:#174c3c;color:white}
+.w-empty{padding:25px;text-align:center;color:#758078;display:none}
+.w-notice{padding:16px;background:#f0f5f0;border-radius:13px;margin-top:22px;color:#476151;line-height:1.6;font-size:14px}
+.w-modal{display:none;position:fixed;inset:0;z-index:9999;background:#10251edb;padding:18px;overflow:auto;align-items:center;justify-content:center}
+.w-modal.open{display:flex}
+.w-modal-box{background:white;color:#20382d;border-radius:18px;width:min(550px,100%);padding:23px}
+.w-modal-box h2{margin-top:16px}
+.w-modal-box p{line-height:1.65}
+.w-modal-flag{text-align:center;font-size:75px;background:#eef5ed;padding:15px;border-radius:14px}
+.w-close{float:right;border:0;border-radius:8px;padding:9px 12px;cursor:pointer}
+.w-map{display:inline-block;margin-top:8px;color:#176347;font-weight:bold}
+@media(max-width:520px){.w-hero{padding:23px 18px}.w-search{flex-direction:column}.w-grid{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}.w-card-top{height:100px;font-size:53px}}
+</style>
+
+<div class="wander">
+<section class="w-hero">
+<small>Your world is waiting</small>
+<h1>Collect places.<br>Make memories.</h1>
+<p>Explore destinations, discover new cultures, and build your personal bucket list of places you dream of visiting.</p>
+<form class="w-search" id="wSearchForm">
+<input id="wSearch" type="search" placeholder="Search any country..." aria-label="Search countries">
+<button type="submit">Explore →</button>
+</form>
+</section>
+
+<section>
+<div class="w-heading">
+<div><h2>Explore the world 🌎</h2><div class="w-muted">Choose a country to discover more.</div></div>
+<span class="w-muted" id="wCount">60 countries</span>
+</div>
+<div class="w-filters" id="wFilters">
+<button class="w-filter active" type="button" data-region="All">All countries</button>
+<button class="w-filter" type="button" data-region="Africa">Africa</button>
+<button class="w-filter" type="button" data-region="Americas">Americas</button>
+<button class="w-filter" type="button" data-region="Asia">Asia</button>
+<button class="w-filter" type="button" data-region="Europe">Europe</button>
+<button class="w-filter" type="button" data-region="Oceania">Oceania</button>
+</div>
+<div id="wGrid" class="w-grid"></div>
+<div class="w-empty" id="wEmpty">No countries found. Try another search.</div>
+</section>
+
+<section>
+<div class="w-heading">
+<div><h2>My bucket list ❤️</h2><div class="w-muted">Your saved dream destinations.</div></div>
+<span class="w-muted" id="wSavedCount">0 saved</span>
+</div>
+<div id="wSavedList" class="w-muted">Your bucket list is empty. Add a country to get started!</div>
+</section>
+
+<div class="w-notice"><strong>Travel reminder:</strong> Check official visa requirements, entry rules, travel advisories, and current prices before booking.</div>
+</div>
+
+<div class="w-modal" id="wModal" role="dialog" aria-modal="true" aria-labelledby="wModalTitle">
+<div class="w-modal-box">
+<button class="w-close" id="wClose" type="button">Close ✕</button>
+<div id="wModalContent"></div>
+</div>
+</div>
+
+<script>
+(function(){
+const grid=document.getElementById('wGrid');
+const search=document.getElementById('wSearch');
+const count=document.getElementById('wCount');
+const empty=document.getElementById('wEmpty');
+const savedCount=document.getElementById('wSavedCount');
+const savedList=document.getElementById('wSavedList');
+const modal=document.getElementById('wModal');
+const modalContent=document.getElementById('wModalContent');
+
+const raw=[
+["Argentina","Americas","Buenos Aires","Argentine peso","Spanish","🇦🇷"],
+["Australia","Oceania","Canberra","Australian dollar","English","🇦🇺"],
+["Austria","Europe","Vienna","Euro","German","🇦🇹"],
+["Belgium","Europe","Brussels","Euro","Dutch, French, German","🇧🇪"],
+["Brazil","Americas","Brasília","Brazilian real","Portuguese","🇧🇷"],
+["Cambodia","Asia","Phnom Penh","Cambodian riel","Khmer","🇰🇭"],
+["Canada","Americas","Ottawa","Canadian dollar","English, French","🇨🇦"],
+["Chile","Americas","Santiago","Chilean peso","Spanish","🇨🇱"],
+["China","Asia","Beijing","Renminbi (yuan)","Chinese","🇨🇳"],
+["Colombia","Americas","Bogotá","Colombian peso","Spanish","🇨🇴"],
+["Croatia","Europe","Zagreb","Euro","Croatian","🇭🇷"],
+["Czechia","Europe","Prague","Czech koruna","Czech","🇨🇿"],
+["Denmark","Europe","Copenhagen","Danish krone","Danish","🇩🇰"],
+["Egypt","Africa","Cairo","Egyptian pound","Arabic","🇪🇬"],
+["Finland","Europe","Helsinki","Euro","Finnish, Swedish","🇫🇮"],
+["France","Europe","Paris","Euro","French","🇫🇷"],
+["Germany","Europe","Berlin","Euro","German","🇩🇪"],
+["Greece","Europe","Athens","Euro","Greek","🇬🇷"],
+["Hong Kong","Asia","Hong Kong","Hong Kong dollar","Chinese, English","🇭🇰"],
+["Hungary","Europe","Budapest","Forint","Hungarian","🇭🇺"],
+["Iceland","Europe","Reykjavík","Icelandic króna","Icelandic","🇮🇸"],
+["India","Asia","New Delhi","Indian rupee","Hindi, English","🇮🇳"],
+["Indonesia","Asia","Jakarta","Indonesian rupiah","Indonesian","🇮🇩"],
+["Ireland","Europe","Dublin","Euro","English, Irish","🇮🇪"],
+["Israel","Asia","Jerusalem","Israeli new shekel","Hebrew, Arabic","🇮🇱"],
+["Italy","Europe","Rome","Euro","Italian","🇮🇹"],
+["Japan","Asia","Tokyo","Japanese yen","Japanese","🇯🇵"],
+["Kenya","Africa","Nairobi","Kenyan shilling","Swahili, English","🇰🇪"],
+["Malaysia","Asia","Kuala Lumpur","Malaysian ringgit","Malay","🇲🇾"],
+["Maldives","Asia","Malé","Maldivian rufiyaa","Dhivehi","🇲🇻"],
+["Mexico","Americas","Mexico City","Mexican peso","Spanish","🇲🇽"],
+["Morocco","Africa","Rabat","Moroccan dirham","Arabic, Amazigh","🇲🇦"],
+["Nepal","Asia","Kathmandu","Nepalese rupee","Nepali","🇳🇵"],
+["Netherlands","Europe","Amsterdam","Euro","Dutch","🇳🇱"],
+["New Zealand","Oceania","Wellington","New Zealand dollar","English, Māori","🇳🇿"],
+["Nigeria","Africa","Abuja","Nigerian naira","English","🇳🇬"],
+["Norway","Europe","Oslo","Norwegian krone","Norwegian","🇳🇴"],
+["Pakistan","Asia","Islamabad","Pakistani rupee","Urdu, English","🇵🇰"],
+["Peru","Americas","Lima","Peruvian sol","Spanish","🇵🇪"],
+["Philippines","Asia","Manila","Philippine peso","Filipino, English","🇵🇭"],
+["Poland","Europe","Warsaw","Polish złoty","Polish","🇵🇱"],
+["Portugal","Europe","Lisbon","Euro","Portuguese","🇵🇹"],
+["Qatar","Asia","Doha","Qatari riyal","Arabic","🇶🇦"],
+["Romania","Europe","Bucharest","Romanian leu","Romanian","🇷🇴"],
+["Saudi Arabia","Asia","Riyadh","Saudi riyal","Arabic","🇸🇦"],
+["Singapore","Asia","Singapore","Singapore dollar","English, Malay, Mandarin, Tamil","🇸🇬"],
+["South Africa","Africa","Pretoria","South African rand","Multiple official languages","🇿🇦"],
+["South Korea","Asia","Seoul","South Korean won","Korean","🇰🇷"],
+["Spain","Europe","Madrid","Euro","Spanish","🇪🇸"],
+["Sri Lanka","Asia","Sri Jayawardenepura Kotte","Sri Lankan rupee","Sinhala, Tamil","🇱🇰"],
+["Sweden","Europe","Stockholm","Swedish krona","Swedish","🇸🇪"],
+["Switzerland","Europe","Bern","Swiss franc","German, French, Italian, Romansh","🇨🇭"],
+["Taiwan","Asia","Taipei","New Taiwan dollar","Mandarin","🇹🇼"],
+["Thailand","Asia","Bangkok","Thai baht","Thai","🇹🇭"],
+["Turkey","Asia","Ankara","Turkish lira","Turkish","🇹🇷"],
+["Ukraine","Europe","Kyiv","Ukrainian hryvnia","Ukrainian","🇺🇦"],
+["United Arab Emirates","Asia","Abu Dhabi","UAE dirham","Arabic","🇦🇪"],
+["United Kingdom","Europe","London","Pound sterling","English","🇬🇧"],
+["United States","Americas","Washington, D.C.","US dollar","English (widely used)","🇺🇸"],
+["Vietnam","Asia","Hanoi","Vietnamese đồng","Vietnamese","🇻🇳"]
+];
+
+const countries=raw.map(([name,region,capital,currency,language,flag])=>({
+name,region,capital,currency,language,flag,
+map:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name)
+}));
+
+let region = 'All';
+
+
+const saved = {{ destinations | map(attribute='country') | list | tojson }};
+const csrfToken = {{ csrf_token | tojson }};
+
+
+
+function esc(value){
+return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+
+async function toggleSaved(countryName) {
+    const country = countries.find(c => c.name === countryName);
+    if (!country) return;
+
+    const button = [...document.querySelectorAll('.w-add')]
+        .find(b => b.textContent.includes(countryName));
+
+    try {
+        const response = await fetch('/destinations/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                csrf_token: csrfToken,
+                country: country.name,
+                region: country.region,
+                capital: country.capital,
+                currency: country.currency,
+                language: country.language,
+                flag: country.flag
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.error || 'Could not update your bucket list.');
+            return;
+        }
+
+        if (result.saved) {
+            if (!saved.includes(country.name)) saved.push(country.name);
+        } else {
+            const index = saved.indexOf(country.name);
+            if (index !== -1) saved.splice(index, 1);
+        }
+
+        render();
+    } catch (error) {
+        alert('Could not connect to the website. Please try again.');
+    }
+}
+
+function makeCard(c){
+  const card=document.createElement('article');
+  card.className='w-card';
+
+  const top=document.createElement('div');
+  top.className='w-card-top';
+  top.style.height='155px';
+  top.style.overflow='hidden';
+  top.style.position='relative';
+  top.style.padding='0';
+
+  const image=document.createElement('img');
+  image.src='https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80';
+  image.alt='Travel scenery in '+c.name;
+  image.loading='lazy';
+  image.style.cssText='width:100%;height:100%;object-fit:cover;display:block;';
+
+  const fallback=document.createElement('div');
+  fallback.textContent=c.flag;
+  fallback.style.cssText='display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:65px;background:#e7f4e9;';
+
+  image.onerror=function(){
+    image.style.display='none';
+    fallback.style.display='flex';
+  };
+
+  top.append(image,fallback);
+
+  const body=document.createElement('div');
+  body.className='w-card-body';
+  body.innerHTML=`
+    <div class="w-region">${esc(c.region)}</div>
+    <h3>${esc(c.name)}</h3>
+    <p>Capital: ${esc(c.capital)}</p>
+    <div class="w-actions">
+      <button type="button" class="w-guide">Travel details</button>
+      <button type="button" class="w-add ${saved.includes(c.name)?'saved':''}">
+        ${saved.includes(c.name)?'✓ Saved':'+ Bucket list'}
+      </button>
+    </div>`;
+
+  body.querySelector('.w-guide').addEventListener('click',()=>showGuide(c));
+  body.querySelector('.w-add').addEventListener('click',()=>toggleSaved(c.name));
+
+  card.append(top,body);
+  return card;
+}
+
+function render(){
+const term=search.value.trim().toLowerCase();
+const visible=countries.filter(c=>(c.name.toLowerCase().includes(term)||c.capital.toLowerCase().includes(term))&&(region==='All'||c.region===region));
+grid.replaceChildren();
+visible.forEach(c=>grid.appendChild(makeCard(c)));
+count.textContent=visible.length+' countries';
+empty.style.display=visible.length?'none':'block';
+savedCount.textContent=saved.length+' saved';
+savedList.replaceChildren();
+const savedCountries=saved.map(name=>countries.find(c=>c.name===name)).filter(Boolean);
+if(!savedCountries.length){
+savedList.textContent='Your bucket list is empty. Add a country to get started!';
+}else{
+const savedGrid=document.createElement('div');
+savedGrid.className='w-grid';
+savedCountries.forEach(c=>savedGrid.appendChild(makeCard(c)));
+savedList.appendChild(savedGrid);
+}
+}
+
+function showGuide(c){
+modalContent.innerHTML=`
+<div class="w-modal-flag">${c.flag}</div>
+<h2 id="wModalTitle">${esc(c.name)} Travel Guide</h2>
+<p><strong>Region:</strong> ${esc(c.region)}</p>
+<p><strong>Capital:</strong> ${esc(c.capital)}</p>
+<p><strong>Currency:</strong> ${esc(c.currency)}</p>
+<p><strong>Languages:</strong> ${esc(c.language)}</p>
+<p>Explore attractions, local food, transportation, accommodation, and activities before planning your trip. Check current entry requirements and prices before booking.</p>
+<a class="w-map" href="${esc(c.map)}" target="_blank" rel="noopener noreferrer">Explore ${esc(c.name)} on Google Maps ↗</a>
+<br><br>
+<button type="button" class="w-add ${saved.includes(c.name)?'saved':''}" id="wModalAdd">${saved.includes(c.name)?'✓ Saved to bucket list':'+ Add to bucket list'}</button>`;
+document.getElementById('wModalAdd').addEventListener('click',()=>{
+toggleSaved(c.name);
+showGuide(c);
+});
+modal.classList.add('open');
+}
+
+document.getElementById('wSearchForm').addEventListener('submit',e=>{
+e.preventDefault();
+render();
+grid.scrollIntoView({behavior:'smooth',block:'start'});
+});
+search.addEventListener('input',render);
+document.querySelectorAll('[data-region]').forEach(button=>{
+button.addEventListener('click',()=>{
+region=button.dataset.region;
+document.querySelectorAll('[data-region]').forEach(b=>b.classList.toggle('active',b===button));
+render();
+});
+});
+function closeModal(){modal.classList.remove('open');}
+document.getElementById('wClose').addEventListener('click',closeModal);
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+render();
+})();
+</script>
+{% endblock %}

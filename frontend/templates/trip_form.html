@@ -1,0 +1,39 @@
+
+{% extends "base.html" %}
+
+{% block title %}Plan a Trip — WANDERLIST{% endblock %}
+{% block breadcrumb %}Trip Planner{% endblock %}
+
+{% block content %}
+<div style="max-width:800px;margin:0 auto">
+  <section style="padding:26px;border-radius:18px;background:linear-gradient(125deg,#173f35,#34765a);color:white;margin-bottom:22px">
+    <p>YOUR NEXT ADVENTURE</p>
+    <h1 style="margin:0 0 8px">Plan a new trip ✈️</h1>
+    <p>Choose your dates, set your budget, and start planning.</p>
+  </section>
+
+  <section style="padding:22px;border:1px solid var(--line,#e3e8e3);border-radius:16px">
+    <form method="POST" action="{{ url_for('new_trip') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <label for="title">Trip name *</label>
+      <input id="title" name="title" maxlength="100" required placeholder="Japan Adventure" style="display:block;width:100%;box-sizing:border-box;padding:11px;margin:6px 0 16px">
+
+      <label for="start_date">Start date</label>
+      <input id="start_date" name="start_date" type="date" style="display:block;width:100%;box-sizing:border-box;padding:11px;margin:6px 0 16px">
+
+      <label for="end_date">End date</label>
+      <input id="end_date" name="end_date" type="date" style="display:block;width:100%;box-sizing:border-box;padding:11px;margin:6px 0 16px">
+
+      <label for="budget">Estimated budget (₱)</label>
+      <input id="budget" name="budget" type="number" min="0" step="0.01" value="0" style="display:block;width:100%;box-sizing:border-box;padding:11px;margin:6px 0 16px">
+
+      <label for="notes">Trip notes</label>
+      <textarea id="notes" name="notes" maxlength="2000" placeholder="Places to visit and reminders" style="display:block;width:100%;box-sizing:border-box;padding:11px;margin:6px 0 16px"></textarea>
+
+      <button type="submit" style="padding:11px 16px;border:0;border-radius:9px;background:#286449;color:white;cursor:pointer">Create trip</button>
+      <a href="{{ url_for('travel_dashboard') }}" style="margin-left:12px">Cancel</a>
+    </form>
+  </section>
+</div>
+{% endblock %}

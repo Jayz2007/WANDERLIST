@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import icon, csrf %}
+{% block title %}Recovery tray{% endblock %}
+{% block breadcrumb %}Recovery tray{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">A LITTLE ROOM TO RECONSIDER</p><h1>Nothing lost<span class="heading-dot">.</span></h1><p class="page-intro">Your removed items are right here. Bring an idea back when you need it.</p></div><span class="count-badge">{{ items|length }} saved item{{ 's' if items|length != 1 else '' }}</span></section>
+<section class="recovery-banner"><span class="recovery-icon">{{ icon('restore', 29) }}</span><div><p class="eyebrow">NEXT TO RESTORE</p><h2>{{ next_item.title if next_item else 'A clean slate' }}</h2><p>{{ 'The original details and status will return to your board.' if next_item else 'Remove an item from your board and it will be kept here.' }}</p></div><form method="post" action="{{ url_for('restore_item') }}">{{ csrf(csrf_token) }}<button class="button button-primary" type="submit" {% if not next_item %}disabled{% endif %}>{{ icon('restore', 18) }}Restore next item</button></form></section>
+<div class="section-heading"><h2>Recently removed</h2><span class="section-description">{{ history_size }} recovery record{{ 's' if history_size != 1 else '' }}</span></div>
+{% if items %}<div class="recovery-grid">{% for item in items %}<article class="recovery-card surface" data-item-id="{{ item.id }}"><div class="card-top"><span class="category">{{ item.category }}</span>{{ icon('archive', 18) }}</div><h3>{{ item.title }}</h3><p>{{ item.description or 'No description added.' }}</p><div class="recovery-card-footer"><span class="status-label status-{{ item.status }}">{{ statuses[item.status] }}</span><small>Removed {{ item.removed_at|event_date }}</small></div></article>{% endfor %}</div>{% else %}<div class="empty-state surface"><span class="empty-icon">{{ icon('archive', 44) }}</span><h2>Some breathing room.</h2><p>There are no removed items here yet.</p><a class="button button-secondary" href="{{ url_for('index') }}">Back to my board{{ icon('arrow', 16) }}</a></div>{% endif %}
+{% endblock %}

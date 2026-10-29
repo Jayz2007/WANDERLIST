@@ -1,0 +1,147 @@
+
+{% extends "base.html" %}
+
+{% block title %}Trip Itinerary — WANDERLIST{% endblock %}
+
+{% block content %}
+<style>
+.trip-page { max-width: 1050px; margin: 0 auto; }
+.trip-hero { padding: 26px; border-radius: 18px; background: linear-gradient(125deg,#173f35,#34765a); color: white; margin-bottom: 22px; }
+.trip-hero h1 { margin: 0 0 8px; font-size: clamp(25px,4vw,36px); overflow-wrap: anywhere; }
+.trip-hero p { margin: 6px 0; color: #e0eee5; }
+.trip-panel { padding: 20px; border: 1px solid var(--line,#e3e8e3); border-radius: 16px; margin-bottom: 18px; background: var(--panel,#fff); }
+.trip-panel h2 { font-size: 19px; margin: 0 0 16px; }
+.trip-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; }
+.trip-form label { display: block; font-size: 13px; color: var(--muted,#68746d); margin-bottom: 5px; }
+.trip-form input,.trip-form select,.trip-form textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--line,#dce3dc); border-radius: 9px; background: var(--surface,#fff); color: inherit; font: inherit; }
+.trip-form textarea { min-height: 80px; resize: vertical; }
+.trip-form .full { grid-column: 1/-1; }
+.trip-button { display: inline-block; padding: 10px 14px; border: 0; border-radius: 9px; background: #286449; color: white; cursor: pointer; text-decoration: none; font: inherit; font-weight: 600; }
+.trip-button.secondary { background: #edf3ef; color: #24543e; }
+.trip-list { display: grid; gap: 13px; }
+.trip-activity { padding: 16px; border: 1px solid var(--line,#e3e8e3); border-radius: 13px; }
+.trip-activity h3 { margin: 0 0 8px; overflow-wrap: anywhere; }
+.trip-activity p { margin: 6px 0; color: var(--muted,#68746d); overflow-wrap: anywhere; }
+.trip-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.trip-tag { padding: 4px 8px; border-radius: 999px; background: #e9f3ed; color: #24543e; font-size: 12px; }
+.trip-empty { color: var(--muted,#68746d); }
+.trip-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+@media(max-width:600px) { .trip-form { grid-template-columns: 1fr; } .trip-form .full { grid-column: auto; } .trip-hero { padding: 20px; } }
+</style>
+
+<div class="trip-page">
+    <section class="trip-hero">
+        <a href="{{ url_for('travel_dashboard') }}" style="color:#e0eee5;text-decoration:none;">← Back to Travel Dashboard</a>
+        <h1>✈️ {{ trip.title }}</h1>
+        <p>{{ trip.start_date or "Start date not set" }} → {{ trip.end_date or "End date not set" }}</p>
+        <p>Trip budget: ₱{{ "%.2f"|format(trip.budget or 0) }}</p>
+        {% if trip.notes %}
+            <p>{{ trip.notes }}</p>
+        {% endif %}
+    </section>
+
+    <section class="trip-panel">
+        <h2>＋ Add an activity</h2>
+        <form class="trip-form" method="post" action="{{ url_for('add_trip_activity', trip_id=trip.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="full">
+                <label for="activity">Activity name *</label>
+                <input id="activity" name="activity" maxlength="120" required placeholder="e.g. Visit Tokyo Tower">
+            </div>
+
+            <div>
+                <label for="activity-date">Date</label>
+                <input id="activity-date" name="activity_date" type="date">
+            </div>
+            <div>
+                <label for="destination-id">Related destination</label>
+                <select id="destination-id" name="destination_id">
+                    <option value="">No destination selected</option>
+                    {% for destination in destinations %}
+                        <option value="{{ destination.id }}">{{ destination.flag }} {{ destination.country }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="start-time">Start time</label>
+                <input id="start-time" name="start_time" type="time">
+            </div>
+            <div>
+                <label for="end-time">End time</label>
+                <input id="end-time" name="end_time" type="time">
+            </div>
+
+            <div class="full">
+                <label for="location">Location</label>
+                <input id="location" name="location" maxlength="200" placeholder="Address, attraction, or meeting point">
+            </div>
+
+            <div>
+                <label for="estimated-cost">Estimated cost (₱)</label>
+                <input id="estimated-cost" name="estimated_cost" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div>
+                <label for="actual-cost">Actual cost (₱)</label>
+                <input id="actual-cost" name="actual_cost" type="number" min="0" step="0.01" value="0">
+            </div>
+
+            <div class="full">
+                <label for="activity-notes">Notes</label>
+                <textarea id="activity-notes" name="notes" maxlength="1500" placeholder="Tickets, reservations, transport, or reminders..."></textarea>
+            </div>
+
+            <div class="full">
+                <button class="trip-button" type="submit">Add to itinerary</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="trip-panel">
+        <h2>My itinerary · {{ itinerary|length }} activities</h2>
+
+        {% if itinerary %}
+            <div class="trip-list">
+                {% for item in itinerary %}
+                    <article class="trip-activity">
+                        <h3>{{ item.activity }}</h3>
+
+                        <div class="trip-tags">
+                            {% if item.activity_date %}
+                                <span class="trip-tag">{{ item.activity_date }}</span>
+                            {% endif %}
+                            {% if item.start_time %}
+                                <span class="trip-tag">{{ item.start_time }}{% if item.end_time %}–{{ item.end_time }}{% endif %}</span>
+                            {% endif %}
+                        </div>
+
+                        {% if item.location %}
+                            <p><strong>Location:</strong> {{ item.location }}</p>
+                        {% endif %}
+                        {% if item.notes %}
+                            <p><strong>Notes:</strong> {{ item.notes }}</p>
+                        {% endif %}
+
+                        <p>Estimated cost: ₱{{ "%.2f"|format(item.estimated_cost or 0) }}</p>
+                        <p>Actual cost: ₱{{ "%.2f"|format(item.actual_cost or 0) }}</p>
+
+                        <div class="trip-actions">
+                            {% if item.location %}
+                                <a class="trip-button secondary" href="https://www.google.com/maps/search/?api=1&query={{ item.location|urlencode }}" target="_blank" rel="noopener noreferrer">Open map ↗</a>
+                            {% endif %}
+
+                            <form method="post" action="{{ url_for('remove_trip_activity', trip_id=trip.id, item_id=item.id) }}" onsubmit="return confirm('Remove this activity?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="trip-button secondary" type="submit">Remove activity</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="trip-empty">No activities yet, bro. Add your first activity above to start building your itinerary!</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
